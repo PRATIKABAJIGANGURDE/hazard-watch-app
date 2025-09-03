@@ -36,38 +36,105 @@ npm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Development Workflow
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Local Development
+The same steps above apply for local development. The app will be available at `http://localhost:8080`
 
-**Use GitHub Codespaces**
+### Code Structure
+```
+src/
+├── components/           # Reusable UI components
+│   ├── ui/              # shadcn/ui components
+│   ├── Dashboard.tsx    # Main dashboard layout
+│   ├── Navigation.tsx   # Top navigation bar
+│   ├── HazardMap.tsx    # Interactive map component
+│   ├── FilterSidebar.tsx # Filtering interface
+│   ├── LiveFeed.tsx     # Real-time updates feed
+│   └── ReportModal.tsx  # Hazard reporting form
+├── hooks/               # Custom React hooks
+├── lib/                 # Utility functions
+├── pages/               # Route components
+└── index.css           # Design system & global styles
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Key Features Implemented
 
-## What technologies are used for this project?
+#### 🗺️ Interactive Map System
+- Hazard visualization with color-coded markers
+- Tooltip information on hover
+- Zoom and pan functionality
+- Coastal region focus for Indian Ocean
 
-This project is built with:
+#### 📊 Real-time Dashboard
+- Live statistics display
+- Verification status indicators
+- Activity timeline
+- Alert notifications
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+#### 🔧 Offline-First Architecture
+- Service worker integration ready
+- IndexedDB for local storage
+- Background sync capabilities
+- Network status awareness
 
-## How can I deploy this project?
+#### 🎨 Design System
+- Ocean-themed color palette
+- HSL-based color tokens
+- Responsive breakpoints
+- Accessible contrast ratios
+- Smooth animations and transitions
 
-Simply open [Lovable](https://lovable.dev/projects/c6a23b81-312a-4630-8287-139505c88c81) and click on Share -> Publish.
+## Deployment
 
-## Can I connect a custom domain to my Lovable project?
+### Quick Deploy
+Simply open [Lovable](https://lovable.dev/projects/c6a23b81-312a-4630-8287-139505c88c81) and click on Share → Publish.
 
-Yes, you can!
+### Custom Domain
+To connect a custom domain:
+1. Navigate to Project > Settings > Domains in Lovable
+2. Click Connect Domain
+3. Follow the DNS configuration steps
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+*Note: A paid Lovable plan is required for custom domains.*
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## API Integration
+
+The app is designed to work with a backend API for:
+- Hazard report submission and retrieval
+- User authentication and authorization
+- Real-time notifications
+- Social media monitoring
+- Verification workflow
+
+### Recommended Backend Stack
+- **Supabase** - Database, authentication, real-time subscriptions
+- **Edge Functions** - Serverless API endpoints
+- **Webhooks** - Third-party integrations
+- **Storage** - Media file handling
+
+## Contributing
+
+This project follows the INCOIS development standards for emergency response systems:
+
+1. **Security First** - All user data is handled securely
+2. **Offline Resilience** - App must work without internet
+3. **Fast Response** - Optimized for emergency situations
+4. **Accessibility** - Usable by all community members
+5. **Mobile Priority** - Designed for field reporting
+
+## License & Usage
+
+Developed for the Indian National Centre for Ocean Information Services (INCOIS).
+This system is intended for official use in ocean hazard monitoring and public safety.
+
+## Support
+
+For technical support or feature requests:
+- Create issues in this repository
+- Contact the INCOIS development team
+- Refer to the [Lovable documentation](https://docs.lovable.dev/)
+
+---
+
+**🌊 Protecting coastal communities through technology and collaboration**

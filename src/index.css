@@ -103,3 +103,68 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Ocean-themed utility classes */
+  .gradient-ocean {
+    background: var(--gradient-ocean);
+  }
+  
+  .gradient-wave {
+    background: var(--gradient-wave);
+  }
+  
+  .gradient-depth {
+    background: var(--gradient-depth);
+  }
+  
+  .shadow-ocean {
+    box-shadow: var(--shadow-ocean);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-float {
+    box-shadow: var(--shadow-float);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+  
+  /* Status indicator classes */
+  .status-verified {
+    @apply bg-success text-success-foreground;
+  }
+  
+  .status-pending {
+    @apply bg-warning text-warning-foreground;
+  }
+  
+  .status-alert {
+    @apply bg-destructive text-destructive-foreground;
+  }
+  
+  /* Hazard type colors */
+  .hazard-tsunami {
+    @apply bg-red-500 text-white;
+  }
+  
+  .hazard-flood {
+    @apply bg-blue-500 text-white;
+  }
+  
+  .hazard-waves {
+    @apply bg-indigo-500 text-white;
+  }
+  
+  .hazard-tide {
+    @apply bg-teal-500 text-white;
+  }
+}
