@@ -53,7 +53,7 @@ export function Dashboard() {
             <Button
               size="lg"
               onClick={() => setReportModalOpen(true)}
-              className="gradient-ocean text-white shadow-float hover:shadow-ocean transition-all duration-300 animate-pulse-glow h-14 px-6"
+              className="gradient-ocean text-primary-foreground shadow-ocean hover:shadow-float transition-smooth hover:scale-105 h-14 px-6"
             >
               <Plus className="h-5 w-5 mr-2" />
               Report Hazard

@@ -40,11 +40,11 @@ export function Navigation({ onToggleSidebar, onToggleFeed, sidebarOpen, feedOpe
           </Button>
           
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full gradient-ocean flex items-center justify-center">
-              <AlertTriangle className="h-4 w-4 text-white" />
+            <div className="w-8 h-8 rounded-full gradient-ocean flex items-center justify-center shadow-card">
+              <AlertTriangle className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">INCOIS Hazard Monitor</h1>
+              <h1 className="text-lg font-semibold text-foreground">INCOIS Hazard Monitor</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
                 Indian National Centre for Ocean Information Services
               </p>

@@ -1,58 +1,81 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { motion } from 'framer-motion';
+import { AlertTriangle, CheckCircle, Clock, Waves, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface HazardReport {
   id: string;
   type: 'tsunami' | 'flood' | 'waves' | 'tide';
-  location: { lat: number; lng: number; name: string };
+  location: string;
+  coordinates: [number, number];
   title: string;
   description: string;
   verified: boolean;
   timestamp: Date;
-  severity: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reporter: string;
 }
 
-// Sample hazard data for demonstration
+// Sample data with Indian Ocean coordinates
 const sampleReports: HazardReport[] = [
   {
     id: '1',
     type: 'tsunami',
-    location: { lat: 13.0827, lng: 80.2707, name: 'Chennai, Tamil Nadu' },
+    location: 'Chennai Coast',
+    coordinates: [13.0827, 80.2707],
     title: 'Unusual Wave Activity',
-    description: 'Higher than normal waves observed near Marina Beach',
+    description: 'Observed larger than normal waves approaching the coastline with rapid water recession.',
     verified: true,
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    severity: 'high'
+    severity: 'critical',
+    reporter: 'Coastal Guard Station'
   },
   {
     id: '2',
     type: 'flood',
-    location: { lat: 15.2993, lng: 74.1240, name: 'Panaji, Goa' },
+    location: 'Visakhapatnam',
+    coordinates: [17.6868, 83.2185],
     title: 'Coastal Flooding',
-    description: 'Streets flooded due to high tide',
-    verified: false,
-    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
-    severity: 'medium'
+    description: 'Heavy rainfall causing flooding in low-lying coastal areas.',
+    verified: true,
+    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+    severity: 'high',
+    reporter: 'Local Observer'
   },
   {
     id: '3',
     type: 'waves',
-    location: { lat: 11.9416, lng: 79.8083, name: 'Puducherry' },
+    location: 'Kochi Harbor',
+    coordinates: [9.9312, 76.2673],
     title: 'High Wave Alert',
-    description: 'Fishermen warned about rough sea conditions',
-    verified: true,
-    timestamp: new Date(Date.now() - 30 * 60 * 1000),
-    severity: 'medium'
+    description: 'Wave heights exceeding 3 meters observed near the harbor entrance.',
+    verified: false,
+    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
+    severity: 'medium',
+    reporter: 'Harbor Master'
   },
   {
     id: '4',
     type: 'tide',
-    location: { lat: 9.9312, lng: 76.2673, name: 'Kochi, Kerala' },
+    location: 'Puducherry',
+    coordinates: [11.9416, 79.8083],
     title: 'Abnormal Tide Pattern',
-    description: 'Tidal levels 2 meters above normal',
+    description: 'Tidal levels 2 meters above normal observed at the harbor.',
     verified: false,
     timestamp: new Date(Date.now() - 15 * 60 * 1000),
-    severity: 'low'
+    severity: 'low',
+    reporter: 'Port Authority'
   }
 ];
 
@@ -61,9 +84,24 @@ interface HazardMapProps {
   showVerifiedOnly: boolean;
 }
 
+// Custom map bounds adjuster
+function MapBoundsUpdater({ reports }: { reports: HazardReport[] }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (reports.length > 0) {
+      const bounds = L.latLngBounds(reports.map(r => r.coordinates));
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }, [map, reports]);
+  
+  return null;
+}
+
 export function HazardMap({ selectedTypes, showVerifiedOnly }: HazardMapProps) {
   const [reports] = useState<HazardReport[]>(sampleReports);
 
+  // Filter reports based on props
   const filteredReports = reports.filter(report => {
     if (selectedTypes.length > 0 && !selectedTypes.includes(report.type)) {
       return false;
@@ -75,156 +113,202 @@ export function HazardMap({ selectedTypes, showVerifiedOnly }: HazardMapProps) {
   });
 
   const formatTimeAgo = (date: Date) => {
-    const diff = Date.now() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor(diffMs / (1000 * 60));
     
-    if (hours > 0) return `${hours}h ago`;
-    return `${minutes}m ago`;
+    if (diffHours > 0) {
+      return `${diffHours}h ago`;
+    }
+    return `${diffMins}m ago`;
   };
 
-  const getHazardColor = (type: string, verified: boolean) => {
-    const colors = {
-      tsunami: verified ? 'bg-red-500' : 'bg-red-300',
-      flood: verified ? 'bg-blue-500' : 'bg-blue-300',
-      waves: verified ? 'bg-indigo-500' : 'bg-indigo-300',
-      tide: verified ? 'bg-teal-500' : 'bg-teal-300'
-    };
-    return colors[type as keyof typeof colors] || 'bg-gray-500';
+  const getHazardIcon = (type: string) => {
+    switch (type) {
+      case 'tsunami': return '🌊';
+      case 'flood': return '💧';
+      case 'waves': return '〰️';
+      case 'tide': return '🌀';
+      default: return '⚠️';
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return '#dc2626';
+      case 'high': return '#ea580c';
+      case 'medium': return '#d97706';
+      case 'low': return '#16a34a';
+      default: return '#6b7280';
+    }
+  };
+
+  const createCustomIcon = (report: HazardReport) => {
+    const color = report.verified ? '#22c55e' : '#f59e0b';
+    const severityColor = getSeverityColor(report.severity);
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          background: ${color};
+          width: 24px;
+          height: 24px;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div style="
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 12px;
+            height: 12px;
+            background: ${severityColor};
+            border: 2px solid white;
+            border-radius: 50%;
+            font-size: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+          ">!</div>
+        </div>
+      `,
+      className: 'custom-marker',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="h-full w-full rounded-lg overflow-hidden shadow-card relative bg-gradient-depth"
-    >
-      {/* Placeholder Map Background */}
-      <div className="h-full w-full gradient-depth flex items-center justify-center relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900"></div>
+    <div className="relative h-full w-full rounded-lg overflow-hidden shadow-ocean">
+      <MapContainer
+        center={[13.0827, 80.2707]} // Chennai coordinates as default center
+        zoom={6}
+        className="h-full w-full z-0"
+        zoomControl={true}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
         
-        {/* Simulated Map Grid */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="grid grid-cols-8 grid-rows-6 h-full w-full">
-            {Array.from({ length: 48 }).map((_, i) => (
-              <div key={i} className="border border-primary/20"></div>
-            ))}
-          </div>
-        </div>
+        <MapBoundsUpdater reports={filteredReports} />
         
-        {/* Coast Line Simulation */}
-        <div className="absolute inset-0">
-          <svg className="w-full h-full" viewBox="0 0 800 600" fill="none">
-            <path 
-              d="M50 300 Q200 250 350 300 T650 350 L800 400 L800 600 L0 600 Z" 
-              fill="hsl(var(--primary))" 
-              fillOpacity="0.1"
-            />
-            <path 
-              d="M50 300 Q200 250 350 300 T650 350" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth="2"
-              strokeOpacity="0.4"
-            />
-          </svg>
-        </div>
-        
-        {/* Hazard Markers */}
-        {filteredReports.map((report, index) => (
-          <motion.div
+        {filteredReports.map((report) => (
+          <Marker
             key={report.id}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: index * 0.1 + 0.3 }}
-            className="absolute cursor-pointer group"
-            style={{
-              left: `${20 + (report.location.lng - 70) * 8}%`,
-              top: `${60 - (report.location.lat - 8) * 8}%`
-            }}
+            position={report.coordinates}
+            icon={createCustomIcon(report)}
           >
-            <div className={`
-              w-4 h-4 rounded-full border-2 border-white shadow-lg transition-all duration-300
-              ${getHazardColor(report.type, report.verified)}
-              ${!report.verified ? 'animate-pulse' : ''}
-              group-hover:scale-125 group-hover:shadow-xl
-            `}></div>
-            
-            {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-              <div className="bg-card border shadow-card rounded-lg p-3 min-w-[200px]">
+            <Popup className="custom-popup">
+              <div className="p-2 min-w-[220px]">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-1 text-xs rounded-full text-white ${getHazardColor(report.type, true)}`}>
-                    {report.type.toUpperCase()}
-                  </span>
-                  {report.verified && (
-                    <span className="status-verified px-2 py-1 text-xs rounded-full">
-                      Verified
-                    </span>
-                  )}
-                  {!report.verified && (
-                    <span className="status-pending px-2 py-1 text-xs rounded-full">
-                      Pending
-                    </span>
-                  )}
+                  <span className="text-lg">{getHazardIcon(report.type)}</span>
+                  <div>
+                    <h3 className="font-semibold text-sm">{report.title}</h3>
+                    <p className="text-xs text-muted-foreground">{report.location}</p>
+                  </div>
                 </div>
-                <h4 className="font-semibold text-sm mb-1">{report.title}</h4>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {report.description}
-                </p>
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>📍 {report.location.name}</span>
-                  <span>{formatTimeAgo(report.timestamp)}</span>
+                
+                <p className="text-xs mb-3 text-foreground">{report.description}</p>
+                
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1">
+                    {report.verified ? (
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                    ) : (
+                      <Clock className="h-3 w-3 text-yellow-500" />
+                    )}
+                    <span className="text-xs font-medium">
+                      {report.verified ? 'Verified' : 'Pending'}
+                    </span>
+                  </div>
+                  
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs text-white"
+                    style={{ backgroundColor: getSeverityColor(report.severity) }}
+                  >
+                    {report.severity.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTimeAgo(report.timestamp)}
+                  </div>
+                  <span className="text-xs">by {report.reporter}</span>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </Popup>
+          </Marker>
         ))}
-        
-        {/* Map Placeholder Text */}
-        <div className="text-center text-muted-foreground z-0">
-          <div className="text-lg font-semibold mb-2">INCOIS Hazard Map</div>
-          <div className="text-sm">Interactive map integration ready</div>
-          <div className="text-xs mt-1">Indian Ocean Region Coverage</div>
-        </div>
+      </MapContainer>
+
+      {/* Map overlay info */}
+      <div className="absolute top-4 left-4 z-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card border"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Waves className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-sm">Live Reports</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Showing {filteredReports.length} of {reports.length} reports
+          </div>
+        </motion.div>
       </div>
-      
-      {/* Map overlay with stats */}
-      <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 shadow-card">
-        <div className="text-xs text-muted-foreground mb-1">Live Reports</div>
-        <div className="text-lg font-semibold">{filteredReports.length}</div>
-        <div className="flex gap-2 mt-2">
-          {filteredReports.filter(r => r.verified).length > 0 && (
-            <div className="flex items-center gap-1 text-xs">
-              <div className="w-2 h-2 bg-success rounded-full"></div>
-              {filteredReports.filter(r => r.verified).length} Verified
+
+      {/* Legend */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card border"
+        >
+          <h4 className="font-semibold text-xs mb-2">Legend</h4>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full border border-white"></div>
+              <span>Verified</span>
             </div>
-          )}
-          {filteredReports.filter(r => !r.verified).length > 0 && (
-            <div className="flex items-center gap-1 text-xs">
-              <div className="w-2 h-2 bg-warning rounded-full"></div>
-              {filteredReports.filter(r => !r.verified).length} Pending
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full border border-white"></div>
+              <span>Pending</span>
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-2 gap-1 mt-2">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getSeverityColor('critical') }}></div>
+                <span className="text-xs">Critical</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getSeverityColor('high') }}></div>
+                <span className="text-xs">High</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getSeverityColor('medium') }}></div>
+                <span className="text-xs">Medium</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getSeverityColor('low') }}></div>
+                <span className="text-xs">Low</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
-      
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-3 shadow-card">
-        <div className="text-xs font-medium mb-2">Hazard Types</div>
-        <div className="space-y-1">
-          {[
-            { type: 'tsunami', label: 'Tsunami', color: 'bg-red-500' },
-            { type: 'flood', label: 'Flood', color: 'bg-blue-500' },
-            { type: 'waves', label: 'High Waves', color: 'bg-indigo-500' },
-            { type: 'tide', label: 'Unusual Tide', color: 'bg-teal-500' }
-          ].map(item => (
-            <div key={item.type} className="flex items-center gap-2 text-xs">
-              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-              <span>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
+    </div>
   );
 }
